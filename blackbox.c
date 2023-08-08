@@ -18,10 +18,15 @@ struct s_elettrone {
 };
 typedef struct s_elettrone elettrone;
 
+struct s_atomo {
+	vec2d pos;
+};
+typedef struct s_atomo atomo;
+
 int posVettore(int x, int y, int largh);
 void azzeraMat(int* campo, int lungh, int largh);
-void stampaMat(int* , int , int , elettrone);
-void simulaElettrone(elettrone * e);
+void stampaMat(int* , int , int , elettrone, atomo);
+void simulaElettrone(elettrone * e, atomo * a);
 
 int main(){
 	int campo[LATO * LATO];
@@ -29,20 +34,24 @@ int main(){
 	azzeraMat(campo,LATO, LATO);
 	
 	elettrone elProva = {
-		{0,0},	//pos
+		{0,3},	//pos
 		{1,0},	//dir
 		0
 	};
 	
-	stampaMat(campo,LATO, LATO, elProva);
+	atomo at = {
+		{5,4} // pos
+	};
+	
+	stampaMat(campo,LATO, LATO, elProva, at);
 	
 	for(int i=0;i<LATO;i++) {
 		
 		printf("Press Enter to step...\n");
 		getchar();
 		system("cls");
-		simulaElettrone(&elProva);
-		stampaMat(campo,LATO, LATO, elProva);
+		simulaElettrone(&elProva, &at);
+		stampaMat(campo,LATO, LATO, elProva, at);
 	}
 	
 	
@@ -60,7 +69,7 @@ void azzeraMat(int* campo, int lungh, int largh){
 	}
 }
 
-void stampaMat(int* campo, int lungh, int largh, elettrone elett){
+void stampaMat(int* campo, int lungh, int largh, elettrone elett, atomo at){
 	char valoreCampo;
 	int x, y;
 	
@@ -70,6 +79,9 @@ void stampaMat(int* campo, int lungh, int largh, elettrone elett){
 			
 			if(elett.pos.x == x && elett.pos.y == y) 
 				valoreCampo = 1;
+				
+			if(at.pos.x == x && at.pos.y == y) 
+				valoreCampo = 5;
 				
 			printf("|%3d ", valoreCampo);
 		}
@@ -81,7 +93,24 @@ void stampaMat(int* campo, int lungh, int largh, elettrone elett){
 	}
 }
 
-void simulaElettrone(elettrone * e) {
-	e->pos.x += + e->dir.x;
-	e->pos.y += + e->dir.y;
+void simulaElettrone(elettrone * e, atomo * a) {
+	if(e->dir.x == 1 && e->dir.y == 0) {
+		//verso destra
+		int altoDestra  = a->pos.x == e->pos.x + 1 && a->pos.y == e->pos.y - 1;
+		int bassoDestra = a->pos.x == e->pos.x + 1 && a->pos.y == e->pos.y + 1;
+		
+		if(altoDestra && bassoDestra) {	//due atomi diversi
+			e->dir.x = -1;
+			e->dir.y = 0;
+		} else if(altoDestra) {
+			e->dir.x = 0;
+			e->dir.y = 1;
+		} else if(bassoDestra) {
+			e->dir.x = 0;
+			e->dir.y = -1;
+		}
+	}
+	
+	e->pos.x += e->dir.x;
+	e->pos.y += e->dir.y;
 }
