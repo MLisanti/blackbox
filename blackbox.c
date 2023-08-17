@@ -1,20 +1,14 @@
-//prova "blackbox"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include "vec2d.h"
 
 #define LATO 8
-
-struct s_vec2d {
-	int x;
-	int y;
-};
-typedef struct s_vec2d vec2d;
+#define NUM_ATOMI 5
 
 struct s_elettrone {
 	vec2d pos;
 	vec2d dir;
-	int uscito;
+	int stato;
 };
 typedef struct s_elettrone elettrone;
 
@@ -23,10 +17,22 @@ struct s_atomo {
 };
 typedef struct s_atomo atomo;
 
+enum statoElettrone {
+	CORRENTE,		//continua a viaggiare...
+	ESPLOSO,		//qualcosa lo ha fatto esplodere
+	ESPLOSO_BORDO,	//esploso al bordo
+	USCITO			//uscito dalla griglia!
+};
+
 int posVettore(int x, int y, int largh);
 void azzeraMat(int* campo, int lungh, int largh);
 void stampaMat(int* , int , int , elettrone, atomo*, int);
-void simulaElettrone(elettrone * e, atomo * vecAtomi, int qta);
+int simulaElettrone(elettrone * e, atomo * vecAtomi, int qta, int lunghGriglia);
+
+vec2d dirDestra 	= {1, 0};
+vec2d dirSinistra 	= {-1, 0};
+vec2d dirAlto 		= {0, -1};
+vec2d dirBasso 		= {0, 1};
 
 int main(){
 	int campo[LATO * LATO];
@@ -34,14 +40,14 @@ int main(){
 	azzeraMat(campo,LATO, LATO);
 	
 	elettrone elProva = {
-		{0,3},	//pos
-		{1,0},	//dir
-		0
+		{0,3},		//pos
+		{1,0},		//dir
+		CORRENTE	//stato
 	};
 	
-	atomo arrAtomi[4];
+	atomo arrAtomi[NUM_ATOMI];
 	
-	for(int iA = 0 ; iA<4; iA++) {
+	for(int iA = 0 ; iA<NUM_ATOMI; iA++) {
 		arrAtomi[iA].pos.x = -1;
 		arrAtomi[iA].pos.y = -1;
 	}
@@ -52,15 +58,26 @@ int main(){
 	arrAtomi[1].pos.x = 5;
 	arrAtomi[1].pos.y = 1;
 	
-	stampaMat(campo,LATO, LATO, elProva, arrAtomi, 4);
+	arrAtomi[2].pos.x = 2;
+	arrAtomi[2].pos.y = 1;
 	
-	for(int i=0;i<LATO;i++) {
+	arrAtomi[3].pos.x = 2;
+	arrAtomi[3].pos.y = 7;
+	
+	//arrAtomi[4].pos.x = 4;
+	//arrAtomi[4].pos.y = 7;
+	
+	stampaMat(campo,LATO, LATO, elProva, arrAtomi, NUM_ATOMI);
+	
+	elProva.stato = CORRENTE;
+	
+	while(elProva.stato == CORRENTE) {
 		
 		printf("Press Enter to step...\n");
 		getchar();
 		system("cls");
-		simulaElettrone(&elProva, arrAtomi, 4);
-		stampaMat(campo,LATO, LATO, elProva, arrAtomi, 4);
+		elProva.stato = simulaElettrone(&elProva, arrAtomi, NUM_ATOMI, LATO);
+		stampaMat(campo,LATO, LATO, elProva, arrAtomi, NUM_ATOMI);
 	}
 	
 	
@@ -86,15 +103,17 @@ void stampaMat(int* campo, int lungh, int largh, elettrone elett, atomo* vecAtom
 		for(x=0; x<largh; x++){
 			valoreCampo = campo[posVettore(x, y, largh)];
 			
+			valoreCampo = ' ';
+			
 			if(elett.pos.x == x && elett.pos.y == y) 
-				valoreCampo = 1;
+				valoreCampo = 'e';
 				
 			for(a = 0; a< qtaAtomi; a++) {
 				if(vecAtomi[a].pos.x == x && vecAtomi[a].pos.y == y) 
-					valoreCampo = 5;
+					valoreCampo = 'a';
 			}
 				
-			printf("|%3d ", valoreCampo);
+			printf("|%3c ", valoreCampo);
 		}
 		
 		printf("\n");
@@ -104,7 +123,7 @@ void stampaMat(int* campo, int lungh, int largh, elettrone elett, atomo* vecAtom
 	}
 }
 
-void simulaElettrone(elettrone * e, atomo* vecAtomi, int qtaAtomi) {
+int simulaElettrone(elettrone * e, atomo* vecAtomi, int qtaAtomi, int lunghGriglia) {
 	
 	int iAtomo;
 	
@@ -112,6 +131,8 @@ void simulaElettrone(elettrone * e, atomo* vecAtomi, int qtaAtomi) {
 	int bassoDestra = 0;
 	int altoSinistra  = 0;
 	int bassoSinistra = 0;
+	
+	int statoFinale = CORRENTE;
 	
 	for(iAtomo = 0; iAtomo<qtaAtomi; iAtomo++) {
 		atomo* a = &vecAtomi[iAtomo];
@@ -127,36 +148,54 @@ void simulaElettrone(elettrone * e, atomo* vecAtomi, int qtaAtomi) {
 			bassoSinistra = 1;
 	}
 	
-	if(e->dir.x == 1 && e->dir.y == 0) {
-		//verso destra
-		
-		if(altoDestra && bassoDestra) {
-			e->dir.x = -1;
-			e->dir.y = 0;
-		} else if(altoDestra && !bassoDestra) {
-			e->dir.x = 0;
-			e->dir.y = 1;
-		} else if(!altoDestra && bassoDestra) {
-			e->dir.x = 0;
-			e->dir.y = -1;
+	//bisogna testare le funzioni
+	
+	if(confrontaVec(e->dir, dirAlto)) {
+		if(altoDestra && altoSinistra) {
+			e->dir = dirBasso;
+		} else if(altoDestra && !altoSinistra) {
+			e->dir = dirSinistra;
+		} else if(!altoDestra && altoSinistra) {
+			e->dir = dirDestra;
 		}
 	}
 	
-	if(e->dir.x == 0 && e->dir.y == -1) {
-		//verso alto
-		
-		if(altoDestra && altoSinistra) {
-			e->dir.x = 0;
-			e->dir.y = -1;
-		} else if(altoDestra && !altoSinistra) {
-			e->dir.x = -1;
-			e->dir.y = 0;
-		} else if(!altoDestra && altoSinistra) {
-			e->dir.x = 1;
-			e->dir.y = 0;
+	if(confrontaVec(e->dir, dirBasso)) {
+		if(bassoDestra && bassoSinistra) {
+			e->dir = dirAlto;
+		} else if(bassoDestra && !bassoSinistra) {
+			e->dir = dirSinistra;
+		} else if(!bassoDestra && bassoSinistra) {
+			e->dir = dirDestra;
+		}
+	}
+	
+	if(confrontaVec(e->dir, dirDestra)) {
+		if(altoDestra && bassoDestra) {
+			e->dir = dirSinistra;
+		} else if(altoDestra && !bassoDestra) {
+			e->dir = dirBasso;
+		} else if(!altoDestra && bassoDestra) {
+			e->dir = dirAlto;
+		}
+	}
+	
+	if(confrontaVec(e->dir, dirSinistra)) {
+		if(altoSinistra && bassoSinistra) {
+			e->dir = dirDestra;
+		} else if(altoSinistra && !bassoSinistra) {
+			e->dir = dirBasso;
+		} else if(!altoSinistra && bassoSinistra) {
+			e->dir = dirAlto;
 		}
 	}
 	
 	e->pos.x += e->dir.x;
 	e->pos.y += e->dir.y;
+	
+	if(e->pos.x >= lunghGriglia || e->pos.y >= lunghGriglia || e->pos.x < 0 || e->pos.y < 0) {
+		statoFinale = USCITO;
+	}
+	
+	return statoFinale;
 }
