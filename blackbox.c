@@ -31,8 +31,9 @@ void posizionaAtomi(atomo * arrAtomi, int qta);
 void azzeraMat(int* campo, int lungh, int largh);
 void stampaMat(int* , int , int , elettrone, atomo*, int);
 int simulaElettrone(elettrone * e, atomo * vecAtomi, int qta, int lunghGriglia);
-int scegliRiga();
+int scegliCella(int lungh);
 void stampaStato(elettrone e);
+void preparaLancio(elettrone * e, int lunghLato);
 
 vec2d dirDestra 	= {1, 0};
 vec2d dirSinistra 	= {-1, 0};
@@ -51,14 +52,13 @@ int main(){
 	
 	stampaMat(campo,LATO, LATO, elProva, arrAtomi, NUM_ATOMI);
 	
-	elProva.pos.x = 0;
-	elProva.pos.y = scegliRiga();
-	elProva.dir = dirDestra;
+	preparaLancio(&elProva, LATO);
 	
 	getchar();
 	system("cls");
 	
 	stampaMat(campo,LATO, LATO, elProva, arrAtomi, NUM_ATOMI);
+	
 	
 	
 	while(elProva.stato == CORRENTE) {
@@ -111,6 +111,7 @@ void stampaStato(elettrone e) {
 			printf("Posizione finale: \n");
 			infoVec(e.pos);
 			break;
+			
 		case ASSORBITO:
 			printf("L'elettrone e' stato assorbito!");
 			break;
@@ -125,16 +126,50 @@ void stampaStato(elettrone e) {
 }
 
 
-int scegliRiga() {
-	int riga = -1;
+int scegliCella(int lungh) {
+	int cella = -1;
 	
-	printf("Da quale riga vuoi partire? \n");
+	printf("Da quale cella vuoi partire? \n");
 	do {
-		scanf("%d", &riga);
-	} while(riga < 0 || riga >= LATO);
-	return riga;
+		scanf("%d", &cella);
+	} while(cella < 0 || cella >= lungh);
+	return cella;
 }
 
+void preparaLancio(elettrone * e, int lunghLato) {
+	char dirPartenza = '-';
+	
+	do {
+		printf("Da quale direzione? (N S E O) : ");
+		dirPartenza = getchar();
+		//getchar();	//prende l'invio
+		//printf("\nil valore e' %c (%d)\n", dirPartenza, dirPartenza);
+	} while(dirPartenza != 'N' && dirPartenza != 'S' && dirPartenza != 'E' && dirPartenza != 'O');
+	
+	if(dirPartenza == 'N') {
+		e->pos.y = 0;
+		e->dir = dirBasso;
+		e->pos.x = scegliCella(LATO);
+	}
+	
+	if(dirPartenza == 'S') {
+		e->pos.y = lunghLato - 1;
+		e->dir = dirAlto;
+		e->pos.x = scegliCella(LATO);
+	}
+	
+	if(dirPartenza == 'O') {
+		e->pos.x = 0;
+		e->dir = dirDestra;
+		e->pos.y = scegliCella(LATO);
+	}
+	
+	if(dirPartenza == 'E') {
+		e->pos.x = lunghLato - 1;
+		e->dir = dirSinistra;
+		e->pos.y = scegliCella(LATO);
+	}
+}
 
 int posVettore(int x, int y, int largh) {
 	return y*largh + x;
