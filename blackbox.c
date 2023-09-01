@@ -36,6 +36,7 @@ void stampaStato(elettrone e);
 void preparaLancio(elettrone * e, int lunghLato);
 int controllaAssorbitoBordo(elettrone * e, atomo* a, int lunghGriglia);
 void disegnaCella(int* campo, int x, int y,  int largh, elettrone elett, atomo* vecAtomi, int qtaAtomi);
+void aggiornaDirezioneElettrone(elettrone * e, int altoDestra, int bassoDestra,	int altoSinistra, int bassoSinistra);
 
 vec2d dirDestra 	= {1, 0};
 vec2d dirSinistra 	= {-1, 0};
@@ -96,11 +97,11 @@ void posizionaAtomi(atomo * arrAtomi, int qta) {
 	arrAtomi[2].pos.x = 2;
 	arrAtomi[2].pos.y = 1;
 	
-	arrAtomi[3].pos.x = 2;
-	arrAtomi[3].pos.y = 7;
+	arrAtomi[3].pos.x = -1;
+	arrAtomi[3].pos.y = -1;
 	
 	arrAtomi[4].pos.x = 7;
-	arrAtomi[4].pos.y = 6;
+	arrAtomi[4].pos.y = 7;
 	
 	
 }
@@ -248,32 +249,37 @@ void stampaMat(int* campo, int lungh, int largh, elettrone elett, atomo* vecAtom
 int controllaAssorbitoBordo(elettrone * e, atomo* a, int lunghGriglia) {
 	int assorbitoBordo = 0;
 	
+	int sopra  = 	(a->pos.y == e->pos.y-1 && a->pos.x == e->pos.x);
+	int sotto  = 	(a->pos.y == e->pos.y+1 && a->pos.x == e->pos.x);
+	int destra = 	(a->pos.x == e->pos.x+1 && a->pos.y == e->pos.y);
+	int sinistra = 	(a->pos.x == e->pos.x-1 && a->pos.y == e->pos.y);
+	
 	//assorbito bordo (SUD)
-	if(e->pos.y == lunghGriglia-1 && (a->pos.x == e->pos.x+1 && a->pos.y == e->pos.y))
+	if(confrontaVec(e->dir, dirAlto) && e->pos.y == lunghGriglia-1 && destra)
 		assorbitoBordo = 1;
 		
-	if(e->pos.y == lunghGriglia-1 && (a->pos.x == e->pos.x-1 && a->pos.y == e->pos.y))
+	if(confrontaVec(e->dir, dirAlto) && e->pos.y == lunghGriglia-1 && sinistra)
 		assorbitoBordo = 1;
 	
 	//assorbito bordo (NORD)
-	if(e->pos.y == 0 && (a->pos.x == e->pos.x+1 && a->pos.y == e->pos.y))
+	if(confrontaVec(e->dir, dirBasso) && e->pos.y == 0 && destra)
 		assorbitoBordo = 1;
 		
-	if(e->pos.y == 0 && (a->pos.x == e->pos.x-1 && a->pos.y == e->pos.y))
+	if(confrontaVec(e->dir, dirBasso) && e->pos.y == 0 && sinistra)
 		assorbitoBordo = 1;
 		
 	//assorbito bordo (OVEST)
-	if(e->pos.x == 0 && (a->pos.y == e->pos.y+1 && a->pos.x == e->pos.x))
+	if(confrontaVec(e->dir, dirDestra) && e->pos.x == 0 && sopra)
 		assorbitoBordo = 1;
 		
-	if(e->pos.x == 0 && (a->pos.y == e->pos.y-1 && a->pos.x == e->pos.x))
+	if(confrontaVec(e->dir, dirDestra) && e->pos.x == 0 && sotto)
 		assorbitoBordo = 1;
 		
 	//assorbito bordo (EST)
-	if(e->pos.x == lunghGriglia-1 && (a->pos.y == e->pos.y+1 && a->pos.x == e->pos.x))
+	if(confrontaVec(e->dir, dirSinistra) && e->pos.x == lunghGriglia-1 && sopra)
 		assorbitoBordo = 1;
 		
-	if(e->pos.x == lunghGriglia-1 && (a->pos.y == e->pos.y-1 && a->pos.x == e->pos.x))
+	if(confrontaVec(e->dir, dirSinistra) && e->pos.x == lunghGriglia-1 && sotto)
 		assorbitoBordo = 1;
 		
 	return assorbitoBordo;
@@ -333,6 +339,7 @@ int simulaElettrone(elettrone * e, atomo* vecAtomi, int qtaAtomi, int lunghGrigl
 	
 	int statoFinale = CORRENTE;
 	
+	//portare in una funzione
 	for(iAtomo = 0; iAtomo<qtaAtomi; iAtomo++) {
 		atomo* a = &vecAtomi[iAtomo];
 		
@@ -341,8 +348,9 @@ int simulaElettrone(elettrone * e, atomo* vecAtomi, int qtaAtomi, int lunghGrigl
 			break;
 		}
 		
-		if(assorbitoBordo == 0) {
-			assorbitoBordo = controllaAssorbitoBordo(e, a, lunghGriglia);
+		if(assorbitoBordo == 0 && controllaAssorbitoBordo(e, a, lunghGriglia)) {
+			assorbitoBordo = 1;
+			break;
 		}
 		
 		if(altoDestra == 0 && (a->pos.x == e->pos.x + 1 && a->pos.y == e->pos.y - 1))
